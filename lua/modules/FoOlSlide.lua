@@ -47,12 +47,7 @@ function getdirurl(website)
     ['Riceballicious'] = dirurlreaderlist,
     ['Yuri-ism'] = dirurlslide,
     ['MangajinNoFansub'] = dirurllector,
-    ['HatigarmScans'] = '/hs/directory/',
-    ['BunnysScans'] = '/read/directory/',
-    ['CanisMajorScans'] = dirurlreader,
-    ['HoshikuzuuScans'] = dirurl,
-    ['YaoiIsLife'] = dirurlreader,
-    ['FujoshiBitches'] = dirurlreader
+    ['HatigarmScans'] = '/hs/directory/'
   }  
   if dirs[website] ~= nil then
     return dirs[website]
@@ -238,11 +233,6 @@ function Init()
   AddWebsiteModule('Yuri-ism', 'https://www.yuri-ism.net', cat)
   AddWebsiteModule('SilentSkyScans', 'http://reader.silentsky-scans.net', cat)
   AddWebsiteModule('HatigarmScans', 'http://hatigarmscans.eu', cat)
-  AddWebsiteModule('BunnysScans', 'http://bns.shounen-ai.net', cat)
-  AddWebsiteModule('CanisMajorScans', 'http://cm-scans.shounen-ai.net', cat)
-  AddWebsiteModule('HoshikuzuuScans', 'http://hoshiscans.shounen-ai.net', cat)
-  AddWebsiteModule('YaoiIsLife', 'http://yaoislife.shounen-ai.net', cat)
-  AddWebsiteModule('FujoshiBitches', 'http://fujoshibitches.shounen-ai.net', cat)
   
   -- es-sc
   cat = 'Spanish-Scanlation'

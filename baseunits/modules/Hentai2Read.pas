@@ -163,7 +163,7 @@ begin
   with AddModule do
   begin
     Website := 'Hentai2Read';
-    RootURL := 'https://hentai2read.com';
+    RootURL := 'http://hentai2read.com';
     Category := 'H-Sites';
     SortedList := True;
     OnGetDirectoryPageNumber := @GetDirectoryPageNumber;
