@@ -2,6 +2,7 @@ msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Last-Translator: Havokdan <havokdan@yahoo.com.br>\n"
+"Language-Team: Havokdan <havokdan@yahoo.com.br>\n"
 
 #: dbupdater.rs_buttoncancel
 msgctxt "dbupdater.rs_buttoncancel"
@@ -355,12 +356,19 @@ msgid "One week"
 msgstr "Uma semana"
 
 #: frmmain.rs_optioncompress
+#, fuzzy
+#| msgid ""
+#| "None\n"
+#| "ZIP\n"
+#| "CBZ\n"
+#| "PDF\n"
 msgid ""
 "None\n"
 "ZIP\n"
 "CBZ\n"
 "PDF\n"
-msgstr "Nada\nZIP\nCBZ\nPDF\n"
+"EPUB\n"
+msgstr "Nenhum\nZIP\nCBZ\nPDF\nEPUB\n"
 
 #: frmmain.rs_optionfmddoitems
 msgid ""
@@ -400,7 +408,7 @@ msgid ""
 "Fastest\n"
 "Default\n"
 "Maximum\n"
-msgstr "Nenhum\r\nO mais rápido\r\nPadrão\r\nMáximo"
+msgstr "Nenhum\nO mais rápido\nPadrão\nMáximo"
 
 #: frmmain.rs_wronginput
 msgid "Invalid input!"

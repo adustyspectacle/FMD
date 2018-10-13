@@ -30,7 +30,7 @@ begin
         for v in XPath('//a[@class="manga_info"]') do
         begin
           ALinks.Add(v.toNode.getAttribute('href'));
-          ANames.Add(v.toString);
+          ANames.Add(v.toNode.getAttribute('rel'));
         end;
       finally
         Free;
@@ -141,6 +141,8 @@ begin
     OnGetInfo := @GetInfo;
     OnGetPageNumber := @GetPageNumber;
     OnGetImageURL := @GetImageURL;
+    MaxConnectionLimit := 1;
+    MaxTaskLimit := 1;
   end;
 end;
 

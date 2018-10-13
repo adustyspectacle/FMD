@@ -1,5 +1,13 @@
 function GetNameAndLink()
-  if http.GET(module.RootURL .. '/changeMangaList?type=text') then
+  local u = module.RootURL
+  if module.Website == 'WhiteCloudPavilion' then
+    u = u .. '/manga/free'
+  end
+  if module.Website == 'GodsRealmScan' then
+    u = u .. '/public/'
+  end    
+  u = u .. '/changeMangaList?type=text'
+  if http.GET(u) then
     x = TXQuery.Create(http.Document)
     x.XPathHREFAll('//li/a', links, names)
     return no_error
@@ -42,16 +50,25 @@ function GetInfo();
 end
 
 function GetPageNumber()
-  if http.GET(MaybeFillHost(module.RootURL, url)) then
+  local u = MaybeFillHost(module.RootURL, url)
+  if http.GET(u) then
     x = TXQuery.Create(http.Document)
     x.XPathStringAll('//div[@id="all"]/img/@data-src', task.PageLinks)
     if task.PageLinks.Count == 0 then
       x.XPathStringAll('//div[@id="all"]/img/@src', task.PageLinks)
     end
+    task.pagecontainerlinks.text = u
     return true
   else
     return false
   end
+end
+
+function beforedownloadimage()
+  http.reset()
+  http.headers.values['Referer'] = task.pagecontainerlinks.text
+  print(http.headers.values['Referer'])
+  return true
 end
 
 function AddWebsiteModule(name, url, cat)
@@ -63,32 +80,40 @@ function AddWebsiteModule(name, url, cat)
   m.OnGetNameAndLink = 'GetNameAndLink'
   m.OnGetInfo = 'GetInfo'
   m.OnGetPageNumber = 'GetPageNumber'
+  m.onbeforedownloadimage='beforedownloadimage'
   return m
 end
 
 function Init()
-  AddWebsiteModule('MangaForest', 'http://mangaforest.com', 'English')
-  AddWebsiteModule('MangaDoor', 'http://mangadoor.com', 'Spanish');
+  local c='Spanish'
+  AddWebsiteModule('MangaDoor', 'http://mangadoor.com', c);
+  AddWebsiteModule('MangAs', 'https://mang.as', c);
   
-  local c='Indonesian'
+  c='Indonesian'
   AddWebsiteModule('Komikid', 'http://www.komikid.com', c);
-  AddWebsiteModule('MangaDesu','http://mangadesu.net', c);
-  AddWebsiteModule('MangaID', 'http://mangaid.co', c);  
+  AddWebsiteModule('MangaID', 'http://mangaid.net', c);
+  AddWebsiteModule('KomikGue', 'https://www.komikgue.com', c);
   
   c='Raw'
   AddWebsiteModule('RawMangaUpdate', 'http://rawmangaupdate.com', c);
   AddWebsiteModule('MangaRawOnline', 'http://mangaraw.online', c);
+  AddWebsiteModule('RawMangaSite', 'https://rawmanga.site', c);
   
   c='Turkish'
   AddWebsiteModule('MangaDenizi', 'http://www.mangadenizi.com', c);
   AddWebsiteModule('ManhuaTr', 'http://manhua-tr.com', c);
-  AddWebsiteModule('MangaVadisi', 'http://manga-v2.mangavadisi.org/', c);
+  AddWebsiteModule('MangaVadisi', 'http://manga-v2.mangavadisi.org', c);
 
   c='English-Scanlation'
   AddWebsiteModule('FallenAngelsScans','http://manga.fascans.com', c);
   AddWebsiteModule('ChibiManga','http://www.cmreader.info', c);
+  AddWebsiteModule('WhiteCloudPavilion','https://whitecloudpavilion.com', c);
+  AddWebsiteModule('HatigarmScans', 'https://www.hatigarmscans.net', c)
 
   c='Spanish-Scanlation'
   AddWebsiteModule('DarkSkyScan', 'http://darkskyprojects.org', c);
   AddWebsiteModule('NozominoFansub', 'https://nozominofansub.com', c);
+  AddWebsiteModule('GodsRealmScan', 'https://godsrealmscan.com', c); 
+  AddWebsiteModule('CoYuHi', 'http://www.universoyuri.com', c);
+  AddWebsiteModule('SOSScanlation', 'http://sosscanlation.com', c);
 end

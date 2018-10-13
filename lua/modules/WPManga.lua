@@ -189,14 +189,11 @@ function AddWebsiteModule(name, url, category)
 end
 
 function Init()
-  AddWebsiteModule('MangaBoom', 'http://www.mangaboom.com', 'Thai')
-  
   local cat = 'English'
   AddWebsiteModule('Authrone', 'http://www.authrone.com', cat)
   AddWebsiteModule('EyeOnManga', 'http://www.eyeonmanga.com', cat)
   AddWebsiteModule('MangaDeep', 'http://www.mangadeep.com', cat)
   AddWebsiteModule('Manga99', 'http://www.manga99.com', cat)
-  AddWebsiteModule('MangaOnlineToday', 'http://www.mangaonline.today', cat)
   
   cat = 'H-Sites'
   AddWebsiteModule('ReadHentaiManga', 'http://readhentaimanga.com', cat)
@@ -205,4 +202,7 @@ function Init()
   cat = 'English-Scanlation'
   AddWebsiteModule('MangaCow', 'http://mngcow.co', cat)
   AddWebsiteModule('MerakiScans', 'http://merakiscans.com', cat)
+  
+  cat = "Arabic-Scanlation"
+  AddWebsiteModule('3asq', 'http://www.3asq.info', cat)
 end

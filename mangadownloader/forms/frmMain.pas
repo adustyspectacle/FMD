@@ -453,6 +453,8 @@ type
       var CellText: String);
     procedure clbChapterListInitNode(Sender: TBaseVirtualTree; ParentNode,
       Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
+    procedure clbChapterListKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
     procedure edDownloadsSearchButtonClick(Sender: TObject);
     procedure edDownloadsSearchChange(Sender: TObject);
     procedure edFavoritesSearchButtonClick(Sender: TObject);
@@ -865,7 +867,7 @@ resourcestring
   RS_FilterStatusItems = 'Completed'#13#10'Ongoing'#13#10'<none>';
   RS_OptionFMDDoItems = 'Nothing'#13#10'Exit'#13#10'Shutdown'#13#10'Hibernate';
   RS_DropTargetModeItems = 'Download all'#13#10'Add to favorites';
-  RS_OptionCompress = 'None'#13#10'ZIP'#13#10'CBZ'#13#10'PDF';
+  RS_OptionCompress = 'None'#13#10'ZIP'#13#10'CBZ'#13#10'PDF'#13#10'EPUB';
   RS_WebPConvertTo = 'WebP'#13#10'PNG'#13#10'JPEG';
   RS_WebPPNGLevel = 'None'#13#10'Fastest'#13#10'Default'#13#10'Maximum';
 
@@ -1182,15 +1184,16 @@ begin
 
   // waiting gif
   if FileExistsUTF8(IMAGE_FOLDER + 'waiting.gif') then
-  begin
-    gifWaiting := TAnimatedGif.Create(IMAGE_FOLDER + 'waiting.gif');
-    gifWaiting.EraseColor := Self.Color;
-    gifWaiting.BackgroundMode := gbmSaveBackgroundOnce;
-    gifWaitingRect.Left := 53;
-    gifWaitingRect.Top := 84;
-    gifWaitingRect.Right := 101;
-    gifWaitingRect.Bottom := 131;
-  end;
+    try
+      gifWaiting := TAnimatedGif.Create(IMAGE_FOLDER + 'waiting.gif');
+      gifWaiting.EraseColor := Self.Color;
+      gifWaiting.BackgroundMode := gbmSaveBackgroundOnce;
+      gifWaitingRect.Left := 53;
+      gifWaitingRect.Top := 84;
+      gifWaitingRect.Right := 101;
+      gifWaitingRect.Bottom := 131;
+    except
+    end;
 
   mangaCover := TPicture.Create;
 
@@ -1266,7 +1269,7 @@ end;
 procedure TMainForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
   Logger.Send(Self.ClassName+'.FormClose');
-  if cbOptionShowQuitDialog.Checked and (DoAfterFMD = DO_NOTHING) then
+  if cbOptionShowQuitDialog.Checked and (DoAfterFMD = DO_NOTHING) and (not OptionRestartFMD) then
   begin
     if MessageDlg('', RS_DlgQuit, mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
     begin
@@ -1964,6 +1967,8 @@ begin
               DeleteFileUTF8(f + '.cbz')
             else if FileExistsUTF8(f + '.pdf') then
               DeleteFileUTF8(f + '.pdf')
+            else if FileExistsUTF8(f + '.epub') then
+              DeleteFileUTF8(f + '.epub')
             else if DirectoryExistsUTF8(f) then
               DeleteDirectory(f, False);
           end;
@@ -2673,6 +2678,29 @@ begin
   if Assigned(Node) then Node^.CheckType:=ctCheckBox;
 end;
 
+procedure TMainForm.clbChapterListKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+var
+  i: Cardinal;
+  xNode: PVirtualNode;
+begin
+  if (Key = VK_SPACE) and (clbChapterList.SelectedCount > 0) then
+  begin
+    xNode := clbChapterList.GetFirstSelected;
+    for i := 0 to clbChapterList.SelectedCount - 1 do
+    begin
+      if clbChapterList.Selected[xNode] then
+        if xNode^.CheckState = csUncheckedNormal then
+          xNode^.CheckState := csCheckedNormal
+        else if xNode^.CheckState = csCheckedNormal then
+          xNode^.CheckState := csUncheckedNormal;
+      clbChapterList.InvalidateNode(xNode);
+      xNode := clbChapterList.GetNextSelected(xNode);
+    end;
+    Key := VK_UNKNOWN;
+  end;
+end;
+
 procedure TMainForm.edDownloadsSearchButtonClick(Sender: TObject);
 begin
   edDownloadsSearch.Clear;
@@ -3303,9 +3331,12 @@ end;
 
 procedure TMainForm.miMangaListViewInfosClick(Sender: TObject);
 begin
-  if Assigned(vtMangaList.FocusedNode) then
+  if Assigned(vtMangaList.FocusedNode) then begin
     with PMangaInfoData(vtMangaList.GetNodeData(vtMangaList.FocusedNode))^ do
       ViewMangaInfo(link, website, title, '', miMangaListViewInfos, vtMangaList.FocusedNode);
+    if pcInfo.ActivePage <> tsInfoManga then
+      pcInfo.ActivePage := tsInfoManga;
+  end;
 end;
 
 procedure TMainForm.miFavoritesOpenFolderClick(Sender: TObject);

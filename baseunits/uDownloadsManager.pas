@@ -510,6 +510,7 @@ begin
         1: uPacker.Format := pfZIP;
         2: uPacker.Format := pfCBZ;
         3: uPacker.Format := pfPDF;
+        4: uPacker.Format := pfEPUB;
       end;
       uPacker.CompressionQuality := OptionPDFQuality;
       uPacker.Path := CurrentWorkingDir;
@@ -702,7 +703,7 @@ end;
 
 procedure TTaskThread.CheckOut;
 var
-  currentMaxThread: Integer;
+  currentMaxThread, currentMaxConnections: Integer;
   s: String;
 begin
   if Terminated then Exit;
@@ -732,16 +733,20 @@ begin
   end;
 
   if Modules.MaxConnectionLimit[Container.ModuleId] > 0 then
-    while (not Terminated) and (Modules.ActiveConnectionCount[Container.ModuleId] >= currentMaxThread) do
+    while (not Terminated) and (not Modules.CanCreateConnection(Container.ModuleId)) do
       Sleep(SOCKHEARTBEATRATE)
   else
     while (not Terminated) and (Threads.Count >= currentMaxThread) do
       Sleep(SOCKHEARTBEATRATE);
 
+  currentMaxConnections := Modules.MaxConnectionLimit[Container.ModuleId];
+  if currentMaxConnections <= 0 then
+    currentMaxConnections := currentMaxThread;
+
   if (not Terminated) and (Threads.Count < currentMaxThread) then
     try
       EnterCriticalsection(FCS_THREADS);
-      if Modules.ActiveConnectionCount[Container.ModuleId] >= currentMaxThread then Exit;
+      if Modules.ActiveConnectionCount[Container.ModuleId] >= currentMaxConnections then Exit;
       Modules.IncActiveConnectionCount(Container.ModuleId);
       Threads.Add(TDownloadThread.Create);
       with TDownloadThread(Threads.Last) do begin
@@ -1348,7 +1353,7 @@ begin
         ReadInteger(s, 'NumberOfPages', 0),
         ReadInteger(s, 'CurrentPage', 0),
         ReadString(s, 'Website', ''),
-        ReadString(s, 'Link', ''),
+        RemoveHostFromURL(ReadString(s, 'Link', '')),
         ReadString(s, 'Title', ''),
         ReadString(s, 'Status', ''),
         ReadString(s, 'Progress', ''),

@@ -27,15 +27,12 @@ function getdirurl(website)
   local dirs = {
     ['GoManga'] = dirurlreader,
     ['Jaiminisbox'] = dirurlreader,
-    ['TripleSevenScan'] = dirurlreader,
     ['DokiFansubs'] = dirurlreader,
     ['AtelierDuNoir'] = dirurlreader,
     ['OneTimeScans'] = dirurlfoolslide,
     ['DejameProbar'] = dirurlslide,
     ['MenudoFansub'] = dirurlslide,
-    ['NeoProjectScan'] = dirurlslide,
     ['SolitarioNoFansub'] = dirurlslide,
-    ['SantosScan'] = dirurlslideU,
     ['Pzykosis666HFansub'] = dirurlonline,
     ['SeinagiFansub'] = dirurlonline,
     ['HelveticaScans'] = dirurlhelvetica,
@@ -47,12 +44,13 @@ function getdirurl(website)
     ['Riceballicious'] = dirurlreaderlist,
     ['Yuri-ism'] = dirurlslide,
     ['MangajinNoFansub'] = dirurllector,
-    ['HatigarmScans'] = '/hs/directory/',
     ['BunnysScans'] = '/read/directory/',
     ['CanisMajorScans'] = dirurlreader,
     ['HoshikuzuuScans'] = dirurl,
     ['YaoiIsLife'] = dirurlreader,
-    ['FujoshiBitches'] = dirurlreader
+    ['FujoshiBitches'] = dirurlreader,
+    ['TapTrans'] = dirurlfsdir,
+    ['LoliVault'] = dirurlonline
   }  
   if dirs[website] ~= nil then
     return dirs[website]
@@ -78,9 +76,6 @@ function getinfo()
       mangainfo.title = Trim(SeparateLeft(x.xpathstring('//title'), '::'))
     end
     local cls = 'info'
-    if module.website == 'HatigarmScans' then
-      cls = 'well'
-    end
     mangainfo.authors = string.gsub(
       x.xpathstring('//div[@class="'..cls..'"]/*[contains(text(),"Author")]/following-sibling::text()[1]'),
       '^[%s:]*', '')
@@ -104,6 +99,25 @@ function getinfo()
     result = no_error
   end
   return result
+end
+
+function getinfo_ths()
+  mangainfo.url=MaybeFillHost(module.RootURL, url)
+  if getWithCookie(mangainfo.url) then
+    local x=TXQuery.Create(http.document)
+    mangainfo.title=x.xpathstring('//div[@id="series_right"]/h1')
+    mangainfo.coverlink=MaybeFillHost(module.RootURL, x.xpathstring('//img[@class="series_img"]/@src'))
+    mangainfo.authors = x.xpathstring('//ul[@class="series_left_data"]/li[contains(span, "Author")]/span[@class="value"]')
+    mangainfo.artists = x.xpathstring('//ul[@class="series_left_data"]/li[contains(span, "Artist")]/span[@class="value"]')
+    mangainfo.genres=x.xpathstringall('//ul[@class="series_left_data"]/li[contains(span, "Genre")]/span[@class="value"]/text()')
+    mangainfo.status=MangaInfoStatusIfPos(x.xpathstring('//ul[@class="series_left_data"]/li[contains(span, "Status")]/span[@class="value"]'))
+    mangainfo.summary = x.xpathstring('//div[@id="series_des"]')
+    x.xpathhreftitleall('//div[@id="staff"]/div/a', mangainfo.chapterlinks, mangainfo.chapternames)
+    InvertStrings(mangainfo.chapterlinks,mangainfo.chapternames)
+    return no_error
+  else
+    return net_problem
+  end
 end
 
 function taskstart()
@@ -173,16 +187,21 @@ function getnameandlink()
   end
   if getWithCookie(s) then
     result = no_error
-    x = TXQuery.create(http.document)
+    local x = TXQuery.create(http.document)
     if module.website == 'AtelierDuNoir' then
-      v = x.xpath('//div[@class="caption"]')
+      local v = x.xpath('//div[@class="caption"]')
       for i = 1, v.count do
         v1 = v.get(i)
         links.add(x.xpathstring('div/a/@href', v1))
         names.add(x.xpathstring('h4', v1))
       end
-    elseif module.website == 'HatigarmScans' then
-      x.XpathHREFAll('//div[@class="grid"]/div/a', links, names)
+    elseif module.website == 'TwistedHelScans' then
+      local v = x.xpath('//div[contains(@class, "series_card")]/a')
+      for i = 1, v.count do
+        local v1 = v.get(i)
+        links.add(v1.getattribute('href'))
+        names.add(x.xpathstring('span', v1))
+      end
     else
       x.XpathHREFAll('//div[@class="list series"]/div/div[@class="title"]/a', links, names)
     end
@@ -202,6 +221,7 @@ function AddWebsiteModule(name, url, category)
   m.OnGetImageURL = 'getimageurl'
   m.OnGetDirectoryPageNumber = 'getdirectorypagenumber'
   m.OnGetNameAndLink = 'getnameandlink'
+  if name == 'TwistedHelScans' then m.ongetinfo = 'getinfo_ths'; end
   return m
 end
 
@@ -223,7 +243,6 @@ function Init()
   AddWebsiteModule('S2Scans', 'https://reader.s2smanga.com', cat)
   AddWebsiteModule('HotChocolateScans', 'http://hotchocolatescans.com', cat)
   AddWebsiteModule('LetItGoScans', 'http://reader.letitgo.scans.today', cat)
-  AddWebsiteModule('TripleSevenScan', 'http://triplesevenscans.com', cat)
   AddWebsiteModule('SeaOtterScans', 'https://reader.seaotterscans.com', cat)
   AddWebsiteModule('AntisenseScans', 'http://antisensescans.com', cat)
   AddWebsiteModule('TheCatScans', 'https://reader.thecatscans.com', cat)
@@ -234,15 +253,20 @@ function Init()
   AddWebsiteModule('PhoenixSerenade', 'https://reader.serenade.moe', cat)
   AddWebsiteModule('VortexScans', 'https://reader.vortex-scans.com', cat)
   AddWebsiteModule('RoseliaScanlations', 'http://reader.roseliascans.com', cat)
-  AddWebsiteModule('SaikoScans', 'http://saikoscans.ml', cat)
   AddWebsiteModule('Yuri-ism', 'https://www.yuri-ism.net', cat)
   AddWebsiteModule('SilentSkyScans', 'http://reader.silentsky-scans.net', cat)
-  AddWebsiteModule('HatigarmScans', 'http://hatigarmscans.eu', cat)
   AddWebsiteModule('BunnysScans', 'http://bns.shounen-ai.net', cat)
   AddWebsiteModule('CanisMajorScans', 'http://cm-scans.shounen-ai.net', cat)
   AddWebsiteModule('HoshikuzuuScans', 'http://hoshiscans.shounen-ai.net', cat)
   AddWebsiteModule('YaoiIsLife', 'http://yaoislife.shounen-ai.net', cat)
   AddWebsiteModule('FujoshiBitches', 'http://fujoshibitches.shounen-ai.net', cat)
+  AddWebsiteModule('TwistedHelScans', 'http://www.twistedhelscans.com', cat)
+  AddWebsiteModule('TapTrans', 'https://taptaptaptaptap.net', cat)
+  AddWebsiteModule('EvilFlowers', 'http://reader.evilflowers.com', cat)
+  AddWebsiteModule('IlluminatiManga', 'http://reader.manga-download.org', cat)
+  
+  cat = 'Italian-Scanlation'  
+  AddWebsiteModule('DigitalTeam', 'http://digitalteamreader.netsons.org', cat)
   
   -- es-sc
   cat = 'Spanish-Scanlation'
@@ -250,9 +274,7 @@ function Init()
   AddWebsiteModule('DejameProbar', 'http://dejameprobar.es', cat)
   AddWebsiteModule('HoshinoFansub', 'http://manga.animefrontline.com', cat)
   AddWebsiteModule('MenudoFansub', 'http://www.menudo-fansub.com', cat)
-  AddWebsiteModule('NeoProjectScan', 'http://npscan.mangaea.net', cat)
-  AddWebsiteModule('Pzykosis666HFansub', 'http://pzykosis666hfansub.com', cat)
-  AddWebsiteModule('SantosScan', 'http://santosfansub.com', cat)
+  AddWebsiteModule('Pzykosis666HFansub', 'https://pzykosis666hfansub.com', cat)
   AddWebsiteModule('SeinagiFansub', 'https://seinagi.org', cat)
   AddWebsiteModule('SeinagiAdultoFansub', 'https://adulto.seinagi.org', cat)
   AddWebsiteModule('SolitarioNoFansub', 'http://snf.mangaea.net', cat)
@@ -263,8 +285,9 @@ function Init()
   AddWebsiteModule('XAnimeSeduccion', 'http://xanime-seduccion.com', cat)
   AddWebsiteModule('JokerFansub', 'http://reader.jokerfansub.com', cat)
   AddWebsiteModule('PatyScans', 'http://lector.patyscans.com', cat)
-  AddWebsiteModule('IdkScans', 'http://reader.idkscans.com', cat)
+  AddWebsiteModule('PCNet', 'http://pcnet.patyscans.com', cat)
   AddWebsiteModule('Nightow', 'http://nightow.net', cat)
   AddWebsiteModule('TrueColorsScan', 'https://truecolorsscans.miocio.org', cat)
   AddWebsiteModule('MangajinNoFansub', 'https://www.mangajinnofansub.com', cat)
+  AddWebsiteModule('LoliVault', 'https://lolivault.net', cat)
 end

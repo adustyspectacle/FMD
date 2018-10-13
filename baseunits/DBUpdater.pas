@@ -64,7 +64,7 @@ resourcestring
 
 implementation
 
-uses FMDVars;
+uses FMDVars, LazFileUtils;
 
 function GetDBURL(const AName: String): String;
 begin
@@ -268,6 +268,7 @@ begin
       begin
         cont := True;
         // save to data folder
+        ForceDirectoriesUTF8(DATA_FOLDER);
         currentfilename := DATA_FOLDER + FCurrentName + DBDATA_SERVER_EXT;
         if FileExists(currentfilename) then
           DeleteFile(currentfilename);
@@ -315,7 +316,7 @@ begin
               Parameters.Add('-o' + AnsiQuotedStr(DATA_FOLDER, '"'));  // destination
               Parameters.Add('-aoa');                                  // overwrite all
               Options := Options + [poWaitOnExit];
-              ShowWindow := swoNone;
+              ShowWindow := swoHIDE;
               Execute;
               cont := ExitStatus = 0;
               if cont then

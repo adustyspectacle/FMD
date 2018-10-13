@@ -1,25 +1,27 @@
 function getinfo()
   mangainfo.url=MaybeFillHost(module.rooturl,url)
+  http.cookies.values['mangadex_h_toggle'] = '1'
   if http.get(mangainfo.url) then
     x=TXQuery.Create(http.document)
     if mangainfo.title=='' then mangainfo.title=x.xpathstring('//meta[@property="og:title"]/replace(@content,"\\s\\(\\w+\\)\\s-\\sMangaDex$","")') end
-    mangainfo.coverlink=MaybeFillHost(module.rooturl,x.xpathstring('//img[@title="Manga image"]/@src'))
-    mangainfo.authors=x.xpathstring('//tr[./th="Author:"]/string-join(./td,", ")')
-    mangainfo.artists=x.xpathstring('//tr[./th="Artist:"]/string-join(./td,", ")')
-    mangainfo.status=MangaInfoStatusIfPos(x.xpathstring('//tr[./th="Status:"]'))
-    mangainfo.summary=x.xpathstring('//tr[./th="Description:"]/td')
-    local l='//*[@id="chapters"]//tr[@id]'
+    mangainfo.coverlink=MaybeFillHost(module.rooturl,x.xpathstring('//div[contains(@class, "card-body")]//img[@class]/@src'))
+    mangainfo.authors=x.xpathstring('//div[./text()="Author:"]/string-join(./following-sibling::div,", ")')
+    mangainfo.artists=x.xpathstring('//div[./text()="Artist:"]/string-join(./following-sibling::div,", ")')
+    mangainfo.genres = x.xpathstringall('//div[./text()="Genres:"]/following-sibling::div//a')
+    mangainfo.status=MangaInfoStatusIfPos(x.xpathstring('//div[contains(./text(),"status")]/following-sibling::div'))
+    mangainfo.summary=x.xpathstring('//div[./text()="Description:"]/following-sibling::div')
+    local l='//div[contains(@class, "chapter-container")]//div[@data-id and not(starts-with(./div[contains(@class, "text-warning")], "in "))]'
     local n=''
     if module.getoption('luashowalllang') then
-      n='/concat(.," [",../td[2]/img/@title,"]"'
+      n='/concat(.," [",../div[6]/img/@title,"]"'
     else
-      l=l..'[./td/img[@title="English"]]'
+      l=l..'[./div/img[@title="English"]]'
     end
     if module.getoption('luashowscangroup') then
       if n=='' then n='/concat(.' end
-      n=n..'," [",../td[3],"]"'
+      n=n..'," [",../div[7],"]"'
     end
-    l=l..'/td[1]'
+    l=l..'/div[2]'
     if n~='' then n=n..')' end
     n=l..n
     l=l..'/a/@href'
@@ -28,7 +30,7 @@ function getinfo()
       x.xpathstringall(l,mangainfo.chapterlinks)
       x.xpathstringall(n,mangainfo.chapternames)
       if http.terminated then break end
-      nurl=x.xpathstring('//ul[@class="pagination"]/li[@class="active"]/following-sibling::li[@class="paging"]/a/@href')
+      nurl=x.xpathstring('//ul[contains(@class,"pagination")]/li[contains(@class,"active")]/following-sibling::li[@class="page-item"]/a/@href')
       if nurl=='' then break end
       if http.get(MaybeFillHost(module.rooturl,nurl)) then
         x.parsehtml(http.document)
@@ -44,13 +46,17 @@ function getinfo()
 end
 
 function getpagenumber()
-  if http.get(MaybeFillHost(module.rooturl,url)) then
-    local s=StreamToString(http.document)
-    local lurl=MaybeFillHost(module.rooturl,AppendURLDelim(GetBetween('var server = \'','\';',s))..GetBetween('var dataurl = \'','\';',s)..'/')
-    task.pagelinks.commatext=GetBetween('var page_array = [','];',s):gsub('\'','')
-    task.pagelinks.text=Trim(task.pagelinks.text)
-    for i=0,task.pagelinks.count-1 do
-      task.pagelinks[i]=lurl..task.pagelinks[i]
+  http.cookies.values['mangadex_h_toggle'] = '1'
+  local chapterid = url:match('chapter/(%d+)')
+  if http.get(MaybeFillHost(module.rooturl,'/api/chapter/'..chapterid)) then
+    local x=TXQuery.Create(http.Document)
+    local hash = x.xpathstring('json(*).hash')
+    local srv = x.xpathstring('json(*).server')
+    local v = x.xpath('json(*).page_array()')
+    for i = 1, v.count do
+      local v1 = v.get(i)
+      local s = MaybeFillHost(module.rooturl, srv .. '/' .. hash .. '/' .. v1.toString)
+      task.pagelinks.add(s)
     end
     return true
   else
@@ -59,37 +65,27 @@ function getpagenumber()
   return true
 end
 
-function taskstart()
-  for i=0, task.pagelinks.count-1 do
-    task.pagelinks[i]=MaybeFillHost(module.rooturl,task.pagelinks[i])
-  end
-  return true
-end
-
-local dirurl='/titles'
+local dirurl='/titles/2'
 
 function getdirectorypagenumber()
-  if http.get(module.rooturl..dirurl) then
-    x=TXQuery.Create(http.document)
-    local perpage=tonumber(RegExprGetMatch('/(\\d+)$',x.xpathstring('//ul[@class="pagination"]/li[@class="active"]/following-sibling::li[@class="paging"]/a/@href'),1))
-    local lastpage=tonumber(RegExprGetMatch('/(\\d+)$',x.xpathstring('//ul[@class="pagination"]/li[@class="paging"][last()]/a/@href'),1))
-    if perpage==nil then perpage=100 end
-    if lastpage==nil then lastpage=perpage end
-    module.tag=perpage
-    page=Round(lastpage/perpage)+1
-    return true
+  http.cookies.values['mangadex_h_toggle'] = '1'
+  http.cookies.values['mangadex_title_mode'] = '2'
+  if http.GET(module.RootURL .. dirurl) then
+    local x = TXQuery.Create(http.Document)
+    page = tonumber(x.xpathstring('(//ul[contains(@class,"pagination")]/li/a)[last()]/@href'):match('/2/(%d+)'))
+    if page == nil then page = 1 end
+    return no_error
   else
-    return false
+    return net_problem
   end
 end
 
 function getnameandlink()
-  local lurl=dirurl
-  if url~='0' then
-    lurl=lurl..'/'..tostring(module.tag*tonumber(url))
-  end
-  if http.GET(module.rooturl..lurl) then
-    TXQuery.Create(http.document).xpathhrefall('//*[@id="content"]//tr/td[2]/a',links,names)
+  http.cookies.values['mangadex_h_toggle'] = '1'
+  http.cookies.values['mangadex_title_mode'] = '2'
+  if http.GET(module.rooturl .. dirurl .. '/' .. IncStr(url) .. '/') then
+    local x = TXQuery.Create(http.document)
+    x.xpathhrefall('//a[contains(@class, "manga_title")]',links,names)
     return no_error
   else
     return net_problem
@@ -103,10 +99,9 @@ function Init()
   m.rooturl='https://mangadex.org'
   m.lastupdated='February 28, 2018'
   m.ongetinfo='getinfo'
-  m.ontaskstart='taskstart'
   m.ongetpagenumber='getpagenumber'
-  m.ongetdirectorypagenumber='getdirectorypagenumber'
   m.ongetnameandlink='getnameandlink'
+  m.ongetdirectorypagenumber = 'getdirectorypagenumber'
   
   m.maxtasklimit=1
   m.maxconnectionlimit=2

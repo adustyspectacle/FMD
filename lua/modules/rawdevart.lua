@@ -2,8 +2,14 @@ function getinfo()
   mangainfo.url=MaybeFillHost(module.RootURL, url)
   if http.get(mangainfo.url) then
     x=TXQuery.Create(http.document)
-    mangainfo.title=x.xpathstring('//div[@class="post-title"]/h3')
-    mangainfo.coverlink=x.xpathstring('//div[@class="summary_image"]/a/img/@src')
+    mangainfo.title=x.xpathstringall('//div[@class="post-title"]/h3/text()', '')
+    if string.match(mangainfo.title:upper(), ' RAW$') ~= nil then
+      mangainfo.title = mangainfo.title:sub(1, -5)
+    end
+    mangainfo.coverlink=x.xpathstring('//div[@class="summary_image"]/a/img/@data-src')
+    if mangainfo.coverlink == '' then
+      mangainfo.coverlink=x.xpathstring('//div[@class="summary_image"]/a/img/@src')
+    end
     mangainfo.authors=x.xpathstringall('//div[@class="author-content"]/a')
     mangainfo.artists=x.xpathstringall('//div[@class="artist-content"]/a')
     mangainfo.genres=x.xpathstringall('//div[@class="genres-content"]/a')
@@ -25,7 +31,7 @@ function getpagenumber()
   end
   if http.get(aurl) then
     x=TXQuery.Create(http.Document)
-    v=x.xpathstringall('//div[@class="page-break"]/img/@src', task.pagelinks)
+    v=x.xpathstringall('//div[contains(@class, "page-break")]/img/@src', task.pagelinks)
   else
     return false
   end
@@ -61,6 +67,10 @@ function AddWebsiteModule(name, url, category)
 end
 
 function Init()
-  AddWebsiteModule('Rawdevart', 'https://rawdevart.com', 'Raw')
-  AddWebsiteModule('TrashScanlations', 'http://trashscanlations.com', 'English-Scanlation')
+  local cat = 'Raw'
+  AddWebsiteModule('RawNeko', 'http://mangaall.com', cat)
+  
+  cat = 'English-Scanlation'
+  AddWebsiteModule('TrashScanlations', 'https://trashscanlations.com', cat)
+  AddWebsiteModule('ZeroScans', 'https://zeroscans.com', cat)
 end
